@@ -1,0 +1,16 @@
+{
+    "name": "mqttbridge",
+    "version": "1.0.0",
+    "description": "",
+    "main": "mqttlistener.js",
+    "scripts": {
+        "start": "node mqttlistener.js"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^0.26.1",
+        "dotenv": "^16.0.0",
+        "mqtt": "^4.3.7"
+    }
+}

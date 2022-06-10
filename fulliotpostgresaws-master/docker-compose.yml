@@ -1,0 +1,90 @@
+version: '3'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:1.5
+    container_name: mosquitto
+    ports:
+      - ${MQTT_PORT}:${MQTT_PORT}
+    networks:
+      - iot
+    volumes:
+      - ./supply/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./supply/users:/mosquitto/config/users
+      - ./tmp/mosquitto/data:/mosquitto/data
+      - ./tmp/mosquitto/log:/mosquitto/log
+    restart: always
+    
+  restapi:
+    image: "node:17-alpine3.14"
+    container_name: restapi
+    depends_on:
+      - postgres
+    networks:
+      - iot
+    restart: always
+    user: "node"
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    ports:
+      - ${RESTAPI_PORT}:${RESTAPI_PORT} #to outside host:container
+    volumes:
+      - ./restapi:/home/node/app
+    command: "sh start_script.sh"
+
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    expose:
+      - ${POSTGRES_PORT}
+    networks:
+      - iot
+    volumes: 
+      - ./tmp/postgres:/var/lib/postgresql/data
+      
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - iot
+
+  mqttbridge:
+    image: "node:17-alpine3.14"
+    container_name: mqttbridge
+    depends_on:
+      - restapi
+    networks:
+      - iot
+    restart: always
+    user: "node"
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    volumes:
+      - ./mqttbridge:/home/node/app
+    command: "sh start_script.sh"
+
+  admin:
+    build: ./front_end
+    container_name: front_end
+    depends_on:
+      - restapi
+    command: npm run dev
+    ports:
+      - 3000:3000
+      - 3001:3001
+    volumes:
+    - ./code
+    - ./code/node_modules
+
+networks:
+  iot:
